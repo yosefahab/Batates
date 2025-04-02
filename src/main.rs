@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 #![windows_subsystem = "windows"]
 
 mod animation;
@@ -15,7 +16,7 @@ use pet::*;
 use bevy::app::PluginGroupBuilder;
 use bevy::prelude::*;
 
-use bevy::window::{CompositeAlphaMode, WindowLevel, WindowResolution};
+use bevy::window::{CompositeAlphaMode, WindowLevel, WindowMode, WindowResolution};
 
 fn main() {
     App::new()
@@ -31,11 +32,13 @@ fn main() {
 
 fn setup_plugins() -> PluginGroupBuilder {
     let window = Window {
-        title: String::from("batates"),
+        title: String::from("Batates"),
         transparent: false,
-        decorations: true,
+        decorations: false,
         window_level: WindowLevel::AlwaysOnTop,
-        resolution: WindowResolution::new(500.0, 500.0),
+        // resolution: WindowResolution::new(1000.0, 1000.0),
+        mode: WindowMode::Windowed,
+        position: WindowPosition::Centered(MonitorSelection::Current),
         #[cfg(target_os = "macos")]
         composite_alpha_mode: CompositeAlphaMode::PostMultiplied,
         ..default()
