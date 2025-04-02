@@ -9,5 +9,5 @@ impl Plugin for CameraPlugin {
 }
 
 fn spawn_camera(mut commands: Commands) {
-    commands.spawn(Camera2d { ..default() });
+    commands.spawn(Camera2d);
 }

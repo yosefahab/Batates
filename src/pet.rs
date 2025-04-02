@@ -8,7 +8,6 @@ use bevy::prelude::*;
 use bevy::render::render_asset::RenderAssetUsages;
 
 //const IMAGE_PATH: &str = "koala.png";
-const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, 0.0, -20.0);
 const MAX_ALLOWED_IDLE: Duration = Duration::from_secs(15);
 const NUM_FRAMES: usize = 61;
 const NUM_STATES: usize = 8;
@@ -17,7 +16,7 @@ const HEIGHT: f32 = 50.0;
 const SPRITE_SIZE: Vec2 = Vec2::new(WIDTH, HEIGHT);
 const FPS: u8 = 12;
 
-const DRAG_THRESHOLD: Duration = Duration::from_millis(200);
+const DRAG_THRESHOLD: Duration = Duration::from_millis(125);
 const DOUBLE_CLICK_THRESHOLD: Duration = Duration::from_millis(250);
 
 #[derive(Bundle)]
@@ -116,8 +115,7 @@ fn spawn_pet(
             animation_config,
             sprite_bundle: Sprite {
                 image: image_handle,
-                custom_size: Some(SPRITE_SIZE + Vec2::new(20.0, 20.0)),
-                // transform: Transform::from_translation(STARTING_TRANSLATION),
+                custom_size: Some(SPRITE_SIZE + Vec2::new(30.0, 30.0)),
                 texture_atlas: Some(TextureAtlas {
                     layout: texture_atlas_layout.add(layout),
                     index: first_sprite_index,
@@ -184,82 +182,73 @@ fn is_within_bounds(point: Vec2, center: Vec2, half_size: Vec2) -> bool {
         && point.y <= center.y + half_size.y
 }
 fn handle_clicks(
-    windows: Query<&Window>,
+    mut windows: Query<&mut Window>,
     camera: Query<(&Camera, &GlobalTransform)>,
     mut pet_query: Query<(&mut Transform, &mut Pet), With<Pet>>,
     buttons: Res<ButtonInput<MouseButton>>,
     mut dq: Query<&mut DQ>,
 ) {
-    let window = windows.get_single();
-    if window.is_err() {
-        return;
-    }
-    let window = window.unwrap();
+    let window = match windows.get_single_mut() {
+        Ok(window) => window,
+        Err(_) => return,
+    };
     let (camera, camera_transform) = camera.single();
     let (mut sprite_transform, mut pet) = pet_query.single_mut();
     let now = Instant::now();
     let mut dq = dq.single_mut();
-    let mut clicked_on_pet = false;
 
-    if let Some(cursor_pos) = window.cursor_position() {
-        let sprite_pos = sprite_transform.translation.xy();
-        let cursor_pos = camera
-            .viewport_to_world_2d(camera_transform, cursor_pos)
-            .unwrap();
-        let sprite_size = SPRITE_SIZE * sprite_transform.scale.xy();
-        let half_size = sprite_size / 2.0;
+    let sprite_pos = sprite_transform.translation.xy();
+    let cursor_pos = match window.cursor_position() {
+        Some(pos) => camera.viewport_to_world_2d(camera_transform, pos).unwrap(),
+        None => return,
+    };
+    let sprite_size = SPRITE_SIZE * sprite_transform.scale.xy();
+    let half_size = sprite_size / 2.0;
 
-        if is_within_bounds(cursor_pos, sprite_pos, half_size) {
-            clicked_on_pet = true;
+    let cursor_on_pet = is_within_bounds(cursor_pos, sprite_pos, half_size);
 
-            if buttons.just_pressed(MouseButton::Left) {
-                let time_since_last = now.duration_since(dq.last_click_time);
-                dq.last_click_time = now;
+    if buttons.just_pressed(MouseButton::Left) {
+        if cursor_on_pet {
+            let time_since_last = now.duration_since(dq.last_click_time);
+            dq.last_click_time = now;
 
-                if time_since_last < DOUBLE_CLICK_THRESHOLD {
-                    pet.set_state(PetState::Jumping);
-                    return;
-                } else {
-                    dq.drag_start_time = Some(now);
-                }
+            if time_since_last < DOUBLE_CLICK_THRESHOLD {
+                pet.set_state(PetState::Jumping);
+                return;
+            } else {
+                dq.drag_start_time = Some(now);
             }
-
-            if buttons.pressed(MouseButton::Left) {
-                dq.last_click_time = now;
-
-                if let Some(start_time) = dq.drag_start_time {
-                    if now.duration_since(start_time) > DRAG_THRESHOLD
-                        && pet.state != PetState::Dragged
-                    {
-                        pet.set_state(PetState::Dragged);
-                    }
-                }
-            }
-
-            if buttons.just_released(MouseButton::Left) {
-                if let Some(start_time) = dq.drag_start_time {
-                    if now.duration_since(start_time) < DRAG_THRESHOLD
-                        && pet.state != PetState::Dragged
-                    {
-                        pet.set_state(PetState::SendingLove);
-                    }
-                }
-                dq.drag_start_time = None;
-            }
-        }
-
-        if pet.state == PetState::Dragged && buttons.just_released(MouseButton::Left) {
-            dq.drag_start_time = None;
-            pet.set_state(PetState::Sitting);
-        }
-
-        if buttons.just_pressed(MouseButton::Left) && !clicked_on_pet {
+        } else {
             dq.last_click_time = now;
             pet.move_target = Some(cursor_pos);
             pet.set_state(PetState::Walking);
         }
+    }
 
-        if pet.state == PetState::Dragged {
+    if buttons.pressed(MouseButton::Left) && cursor_on_pet {
+        dq.last_click_time = now;
+
+        if let Some(start_time) = dq.drag_start_time {
+            if now.duration_since(start_time) > DRAG_THRESHOLD && pet.state != PetState::Dragged {
+                pet.set_state(PetState::Dragged);
+            }
+        }
+    }
+
+    if buttons.just_released(MouseButton::Left) && cursor_on_pet {
+        if let Some(start_time) = dq.drag_start_time {
+            if now.duration_since(start_time) < DRAG_THRESHOLD && pet.state != PetState::Dragged {
+                pet.set_state(PetState::SendingLove);
+            }
+        }
+        dq.drag_start_time = None;
+    }
+
+    if pet.state == PetState::Dragged {
+        if buttons.just_released(MouseButton::Left) {
+            dq.drag_start_time = None;
+            pet.set_state(PetState::Sitting);
+        } else {
             sprite_transform.translation = cursor_pos.extend(sprite_transform.translation.z);
         }
     }

@@ -4,7 +4,7 @@ Desktop pets written in Bevy.
 
 Features:
 
-- [ ] Transparent window
+- [x] Transparent window
 - [ ] Clickthrough
 - [x] Moves to the place a mouse is clicked (currently only within window bounds)
 - [ ] Works with any pet skin (as long as it implements all states)

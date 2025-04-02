@@ -1,4 +1,3 @@
-#![allow(unused_imports)]
 #![windows_subsystem = "windows"]
 
 mod animation;
@@ -16,7 +15,7 @@ use pet::*;
 use bevy::app::PluginGroupBuilder;
 use bevy::prelude::*;
 
-use bevy::window::{CompositeAlphaMode, WindowLevel, WindowMode, WindowResolution};
+use bevy::window::{CompositeAlphaMode, WindowLevel, WindowMode};
 
 fn main() {
     App::new()
@@ -37,7 +36,6 @@ fn setup_plugins() -> PluginGroupBuilder {
         has_shadow: false,
         decorations: true,
         window_level: WindowLevel::AlwaysOnTop,
-        // resolution: WindowResolution::new(1000.0, 1000.0),
         mode: WindowMode::Windowed,
         position: WindowPosition::Centered(MonitorSelection::Primary),
         #[cfg(target_os = "macos")]
