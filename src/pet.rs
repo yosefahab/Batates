@@ -1,17 +1,11 @@
-use crate::{
-    animation::AnimationConfig,
-    dq::DQ,
-    movement::{Acceleration, MovingObjectBundle, Velocity},
-};
+use crate::animation::AnimationConfig;
+use crate::dq::DQ;
+use crate::movement::{Acceleration, MovingObjectBundle, Velocity};
 use std::time::{Duration, Instant};
 
-use bevy::{
-    prelude::*,
-    render::{
-        render_asset::RenderAssetUsages,
-        texture::{CompressedImageFormats, ImageSampler, ImageType},
-    },
-};
+use bevy::image::{CompressedImageFormats, ImageSampler, ImageType};
+use bevy::prelude::*;
+use bevy::render::render_asset::RenderAssetUsages;
 
 //const IMAGE_PATH: &str = "koala.png";
 const STARTING_TRANSLATION: Vec3 = Vec3::new(0.0, 0.0, -20.0);
@@ -30,8 +24,7 @@ const DOUBLE_CLICK_THRESHOLD: Duration = Duration::from_millis(250);
 struct PetBundle {
     pet: Pet,
     animation_config: AnimationConfig,
-    sprite_bundle: SpriteBundle,
-    texture_atlas: TextureAtlas,
+    sprite_bundle: Sprite,
 }
 pub struct PetPlugin;
 
@@ -88,7 +81,18 @@ fn generate_texture_layout() -> TextureAtlasLayout {
         None,
     )
 }
-
+fn get_pet_image() -> Image {
+    const EMBEDDED_IMAGE: &[u8] = include_bytes!("../assets/koala.png");
+    Image::from_buffer(
+        EMBEDDED_IMAGE,
+        ImageType::Extension("png"),
+        CompressedImageFormats::NONE,
+        true,
+        ImageSampler::nearest(),
+        RenderAssetUsages::default(),
+    )
+    .expect("Failed to create image")
+}
 fn spawn_pet(
     mut commands: Commands,
     //asset_server: Res<AssetServer>,
@@ -99,16 +103,7 @@ fn spawn_pet(
     let pet = Pet::default();
     let first_sprite_index = AnimationConfig::get_frame_range(&pet.state).0;
     let layout = generate_texture_layout();
-    const EMBEDDED_IMAGE: &[u8] = include_bytes!("../assets/koala.png");
-    let image = Image::from_buffer(
-        EMBEDDED_IMAGE,
-        ImageType::Extension("png"),
-        CompressedImageFormats::NONE,
-        true,
-        ImageSampler::nearest(),
-        RenderAssetUsages::default(),
-    )
-    .expect("Failed to create image");
+    let image = get_pet_image();
 
     let image_handle = images.add(image);
     commands.spawn((
@@ -119,18 +114,15 @@ fn spawn_pet(
         PetBundle {
             pet,
             animation_config,
-            sprite_bundle: SpriteBundle {
-                sprite: Sprite {
-                    custom_size: Some(SPRITE_SIZE + Vec2::new(20.0, 20.0)),
-                    ..default()
-                },
-                transform: Transform::from_translation(STARTING_TRANSLATION),
-                texture: image_handle, //asset_server.load(IMAGE_PATH),
+            sprite_bundle: Sprite {
+                image: image_handle,
+                custom_size: Some(SPRITE_SIZE + Vec2::new(20.0, 20.0)),
+                // transform: Transform::from_translation(STARTING_TRANSLATION),
+                texture_atlas: Some(TextureAtlas {
+                    layout: texture_atlas_layout.add(layout),
+                    index: first_sprite_index,
+                }),
                 ..default()
-            },
-            texture_atlas: TextureAtlas {
-                layout: texture_atlas_layout.add(layout),
-                index: first_sprite_index,
             },
         },
     ));
@@ -198,10 +190,11 @@ fn handle_clicks(
     buttons: Res<ButtonInput<MouseButton>>,
     mut dq: Query<&mut DQ>,
 ) {
-    if windows.get_single().is_err() {
+    let window = windows.get_single();
+    if window.is_err() {
         return;
     }
-    let window = windows.single();
+    let window = window.unwrap();
     let (camera, camera_transform) = camera.single();
     let (mut sprite_transform, mut pet) = pet_query.single_mut();
     let now = Instant::now();

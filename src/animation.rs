@@ -45,16 +45,22 @@ impl AnimationConfig {
 }
 
 pub fn update_animation(
-    mut query: Query<(&mut AnimationConfig, &mut TextureAtlas)>,
+    mut query: Query<(&mut AnimationConfig, &mut Sprite)>,
     pet: Query<&Pet>,
     time: Res<Time>,
 ) {
-    let (mut config, mut atlas) = query.single_mut();
+    let (mut config, mut sprite) = query.single_mut();
     let pet = pet.single();
 
     config.frame_timer.tick(time.delta());
     if config.frame_timer.just_finished() {
         let (first_sprite_index, last_sprite_index) = AnimationConfig::get_frame_range(&pet.state);
+
+        if sprite.texture_atlas.is_none() {
+            return;
+        }
+
+        let atlas = sprite.texture_atlas.as_mut().unwrap();
 
         if atlas.index >= last_sprite_index || atlas.index < first_sprite_index {
             atlas.index = first_sprite_index;

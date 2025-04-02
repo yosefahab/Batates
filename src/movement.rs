@@ -46,14 +46,14 @@ impl Plugin for MovementPlugin {
 
 fn update_velocity(mut query: Query<(&Acceleration, &mut Velocity)>, time: Res<Time>) {
     for (acceleration, mut velocity) in query.iter_mut() {
-        velocity.value += acceleration.value * time.delta_seconds();
+        velocity.value += acceleration.value * time.delta_secs();
         velocity.value *= FRICTION; // Apply friction
     }
 }
 fn update_position(mut query: Query<(&Velocity, &mut Transform, &Pet)>, time: Res<Time>) {
     for (velocity, mut transform, pet) in query.iter_mut() {
         if pet.state != PetState::Dragged {
-            transform.translation += velocity.value * SPEED * time.delta_seconds();
+            transform.translation += velocity.value * SPEED * time.delta_secs();
         }
         if velocity.value.x > 0.0 {
             transform.scale.x = 1.0; // Facing right

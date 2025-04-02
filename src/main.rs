@@ -33,12 +33,13 @@ fn main() {
 fn setup_plugins() -> PluginGroupBuilder {
     let window = Window {
         title: String::from("Batates"),
-        transparent: false,
-        decorations: false,
+        transparent: true,
+        has_shadow: false,
+        decorations: true,
         window_level: WindowLevel::AlwaysOnTop,
         // resolution: WindowResolution::new(1000.0, 1000.0),
         mode: WindowMode::Windowed,
-        position: WindowPosition::Centered(MonitorSelection::Current),
+        position: WindowPosition::Centered(MonitorSelection::Primary),
         #[cfg(target_os = "macos")]
         composite_alpha_mode: CompositeAlphaMode::PostMultiplied,
         ..default()

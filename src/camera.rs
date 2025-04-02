@@ -9,11 +9,5 @@ impl Plugin for CameraPlugin {
 }
 
 fn spawn_camera(mut commands: Commands) {
-    commands.spawn(Camera2dBundle {
-        camera: Camera {
-            //clear_color: ClearColorConfig::Custom(Color::srgb(0.8, 0.4, 0.2)),
-            ..default()
-        },
-        ..default()
-    });
+    commands.spawn(Camera2d { ..default() });
 }

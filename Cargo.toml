@@ -10,7 +10,7 @@ icon = ["assets/icon.ico"]
 
 [dependencies]
 device_query = "2.1.0"
-bevy = { version = "0.14.0", default-features = false, features = [
+bevy = { version = "0.15.0", default-features = false, features = [
     "bevy_asset",
     "bevy_animation",
     "animation",
@@ -19,6 +19,7 @@ bevy = { version = "0.14.0", default-features = false, features = [
     "png",
     "bevy_render",
     "bevy_sprite",
+    "bevy_image",
     "bevy_state",
 ] }
 
