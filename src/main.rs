@@ -15,7 +15,10 @@ use pet::*;
 use bevy::app::PluginGroupBuilder;
 use bevy::prelude::*;
 
-use bevy::window::{CompositeAlphaMode, WindowLevel, WindowMode};
+use bevy::window::{
+    CompositeAlphaMode, CursorOptions, MonitorSelection, Window, WindowLevel, WindowMode,
+    WindowPosition, WindowResolution,
+};
 
 fn main() {
     App::new()
@@ -30,14 +33,21 @@ fn main() {
 }
 
 fn setup_plugins() -> PluginGroupBuilder {
+    let (monitor_width, monitor_height) = resolution::current_resolution().unwrap();
     let window = Window {
         title: String::from("Batates"),
         transparent: true,
         has_shadow: false,
         decorations: true,
+        resizable: false,
+        cursor_options: CursorOptions {
+            hit_test: false,
+            ..default()
+        },
         window_level: WindowLevel::AlwaysOnTop,
         mode: WindowMode::Windowed,
         position: WindowPosition::Centered(MonitorSelection::Primary),
+        resolution: WindowResolution::new(monitor_width as f32, monitor_height as f32),
         #[cfg(target_os = "macos")]
         composite_alpha_mode: CompositeAlphaMode::PostMultiplied,
         ..default()

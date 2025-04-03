@@ -1,6 +1,6 @@
 [package]
 name = "batates"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 
 [package.metadata.bundle]
@@ -9,19 +9,13 @@ identifier = "com.batates.app"
 icon = ["assets/icon.ico"]
 
 [dependencies]
-device_query = "2.1.0"
+device_query = "3.0.1"
 bevy = { version = "0.15.0", default-features = false, features = [
-    "bevy_asset",
-    "bevy_animation",
-    "animation",
-    "bevy_winit",
-    "x11",
-    "png",
-    "bevy_render",
-    "bevy_sprite",
-    "bevy_image",
-    "bevy_state",
+  "png",
+  "bevy_winit",
+  "bevy_sprite",
 ] }
+resolution = "0.2.0"
 
 [profile.release]
 codegen-units = 1

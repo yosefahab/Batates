@@ -6,31 +6,31 @@ use std::time::{Duration, Instant};
 use bevy::image::{CompressedImageFormats, ImageSampler, ImageType};
 use bevy::prelude::*;
 use bevy::render::render_asset::RenderAssetUsages;
+use device_query::DeviceQuery;
 
 //const IMAGE_PATH: &str = "koala.png";
 const MAX_ALLOWED_IDLE: Duration = Duration::from_secs(15);
 const NUM_FRAMES: usize = 61;
 const NUM_STATES: usize = 8;
-const WIDTH: f32 = 50.0;
-const HEIGHT: f32 = 50.0;
-const SPRITE_SIZE: Vec2 = Vec2::new(WIDTH, HEIGHT);
 const FPS: u8 = 12;
-
+const SPRITE_SIZE: UVec2 = UVec2::splat(50);
+const PET_ORIGIN: Vec3 = Vec3::splat(0.0);
+const PET_SCALE: Vec3 = Vec3::splat(1.5);
 const DRAG_THRESHOLD: Duration = Duration::from_millis(125);
 const DOUBLE_CLICK_THRESHOLD: Duration = Duration::from_millis(250);
 
 #[derive(Bundle)]
 struct PetBundle {
     pet: Pet,
+    sprite: Sprite,
     animation_config: AnimationConfig,
-    sprite_bundle: Sprite,
 }
 pub struct PetPlugin;
 
 impl Plugin for PetPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_pet);
-        app.add_systems(Update, (update_state, handle_clicks));
+        app.add_systems(Update, (update_cursor_pos, update_state, handle_clicks));
     }
 }
 
@@ -73,13 +73,14 @@ impl Pet {
 
 fn generate_texture_layout() -> TextureAtlasLayout {
     TextureAtlasLayout::from_grid(
-        SPRITE_SIZE.as_uvec2(),
+        SPRITE_SIZE,
         NUM_FRAMES as u32,
         NUM_STATES as u32,
         None,
         None,
     )
 }
+
 fn get_pet_image() -> Image {
     const EMBEDDED_IMAGE: &[u8] = include_bytes!("../assets/koala.png");
     Image::from_buffer(
@@ -92,6 +93,7 @@ fn get_pet_image() -> Image {
     )
     .expect("Failed to create image")
 }
+
 fn spawn_pet(
     mut commands: Commands,
     //asset_server: Res<AssetServer>,
@@ -113,9 +115,9 @@ fn spawn_pet(
         PetBundle {
             pet,
             animation_config,
-            sprite_bundle: Sprite {
+            sprite: Sprite {
                 image: image_handle,
-                custom_size: Some(SPRITE_SIZE + Vec2::new(30.0, 30.0)),
+                // custom_size: Some(PET_GAME_SIZE),
                 texture_atlas: Some(TextureAtlas {
                     layout: texture_atlas_layout.add(layout),
                     index: first_sprite_index,
@@ -123,8 +125,14 @@ fn spawn_pet(
                 ..default()
             },
         },
+        Transform {
+            scale: PET_SCALE,
+            translation: PET_ORIGIN,
+            ..default()
+        },
     ));
 }
+
 fn update_state(mut pet: Query<&mut Pet>, time: Res<Time>) {
     let mut pet = pet.single_mut();
     let delta = time.delta();
@@ -147,67 +155,57 @@ fn update_state(mut pet: Query<&mut Pet>, time: Res<Time>) {
     };
 }
 
-//fn pet_movement_controls(
-//    mut query: Query<(&mut Transform, &mut Velocity), With<Pet>>,
-//    mut pet: Query<&mut Pet>,
-//    keyboard_input: Res<ButtonInput<KeyCode>>,
-//) {
-//    let (transform, mut velocity) = query.single_mut();
-//    let mut pet = pet.single_mut();
-//
-//    let mut movement = Vec2::ZERO;
-//
-//    if keyboard_input.pressed(KeyCode::KeyD) {
-//        movement += transform.right().truncate();
-//    }
-//    if keyboard_input.pressed(KeyCode::KeyA) {
-//        movement += transform.left().truncate();
-//    }
-//    if keyboard_input.pressed(KeyCode::KeyW) {
-//        movement += transform.up().truncate();
-//    }
-//    if keyboard_input.pressed(KeyCode::KeyS) {
-//        movement += transform.down().truncate();
-//    }
-//
-//    if movement != Vec2::ZERO {
-//        velocity.value = movement.normalize_or_zero().extend(0.0);
-//        pet.set_state(PetState::Walking);
-//    }
-//}
-fn is_within_bounds(point: Vec2, center: Vec2, half_size: Vec2) -> bool {
-    point.x >= center.x - half_size.x
-        && point.x <= center.x + half_size.x
-        && point.y >= center.y - half_size.y
-        && point.y <= center.y + half_size.y
+fn is_within_bounds(point: Vec2, sprite_transform: &Transform) -> bool {
+    let sprite_pos = sprite_transform.translation.xy();
+    let half_size = (SPRITE_SIZE.as_vec2() * sprite_transform.scale.xy()) / 2.0;
+
+    point.x >= sprite_pos.x - half_size.x
+        && point.x <= sprite_pos.x + half_size.x
+        && point.y >= sprite_pos.y - half_size.y
+        && point.y <= sprite_pos.y + half_size.y
 }
-fn handle_clicks(
-    mut windows: Query<&mut Window>,
-    camera: Query<(&Camera, &GlobalTransform)>,
-    mut pet_query: Query<(&mut Transform, &mut Pet), With<Pet>>,
-    buttons: Res<ButtonInput<MouseButton>>,
+
+/// updates the cursor position by getting the cursor's screen position and converts it into
+/// world2D position. This assumes the window's resolution is maximum.
+fn update_cursor_pos(
+    mut window: Query<&mut Window>,
     mut dq: Query<&mut DQ>,
+    camera: Query<(&Camera, &GlobalTransform)>,
 ) {
-    let window = match windows.get_single_mut() {
+    let window = match window.get_single_mut() {
         Ok(window) => window,
         Err(_) => return,
     };
+    let mut dq = dq.single_mut();
     let (camera, camera_transform) = camera.single();
+
+    let cursor = &dq.state.get_mouse();
+    let (mut mouse_x, mut mouse_y) = cursor.coords;
+    let (window_x, window_y) = match window.position {
+        WindowPosition::At(v) => (v.x, v.y),
+        _ => (0, 0),
+    };
+    mouse_x -= window_x;
+    mouse_y -= window_y;
+    let cursor_pos = camera
+        .viewport_to_world_2d(camera_transform, Vec2::new(mouse_x as f32, mouse_y as f32))
+        .unwrap();
+    dq.cursor_pos = Vec2::new(cursor_pos.x, cursor_pos.y);
+}
+
+fn handle_clicks(
+    mut dq: Query<&mut DQ>,
+    mut pet_query: Query<(&mut Transform, &mut Pet), With<Pet>>,
+) {
     let (mut sprite_transform, mut pet) = pet_query.single_mut();
     let now = Instant::now();
     let mut dq = dq.single_mut();
+    let cursor_pos = dq.cursor_pos;
+    let cursor_on_pet = is_within_bounds(cursor_pos, &sprite_transform);
+    let cursor_pressed = dq.state.get_mouse().button_pressed[1];
 
-    let sprite_pos = sprite_transform.translation.xy();
-    let cursor_pos = match window.cursor_position() {
-        Some(pos) => camera.viewport_to_world_2d(camera_transform, pos).unwrap(),
-        None => return,
-    };
-    let sprite_size = SPRITE_SIZE * sprite_transform.scale.xy();
-    let half_size = sprite_size / 2.0;
-
-    let cursor_on_pet = is_within_bounds(cursor_pos, sprite_pos, half_size);
-
-    if buttons.just_pressed(MouseButton::Left) {
+    if !dq.was_pressed && cursor_pressed {
+        dq.was_pressed = true;
         if cursor_on_pet {
             let time_since_last = now.duration_since(dq.last_click_time);
             dq.last_click_time = now;
@@ -216,37 +214,42 @@ fn handle_clicks(
                 pet.set_state(PetState::Jumping);
                 return;
             } else {
-                dq.drag_start_time = Some(now);
+                dq.held_start_time = Some(now);
             }
         } else {
+            dq.was_pressed = false;
             dq.last_click_time = now;
             pet.move_target = Some(cursor_pos);
             pet.set_state(PetState::Walking);
         }
     }
 
-    if buttons.pressed(MouseButton::Left) && cursor_on_pet {
+    if cursor_pressed && cursor_on_pet {
         dq.last_click_time = now;
-
-        if let Some(start_time) = dq.drag_start_time {
+        dq.was_pressed = true;
+        if let Some(start_time) = dq.held_start_time {
             if now.duration_since(start_time) > DRAG_THRESHOLD && pet.state != PetState::Dragged {
                 pet.set_state(PetState::Dragged);
             }
         }
     }
 
-    if buttons.just_released(MouseButton::Left) && cursor_on_pet {
-        if let Some(start_time) = dq.drag_start_time {
+    // just released
+    if dq.was_pressed && !cursor_pressed && cursor_on_pet {
+        dq.was_pressed = false;
+        if let Some(start_time) = dq.held_start_time {
             if now.duration_since(start_time) < DRAG_THRESHOLD && pet.state != PetState::Dragged {
                 pet.set_state(PetState::SendingLove);
             }
         }
-        dq.drag_start_time = None;
+        dq.held_start_time = None;
     }
 
     if pet.state == PetState::Dragged {
-        if buttons.just_released(MouseButton::Left) {
-            dq.drag_start_time = None;
+        // just released
+        if !cursor_pressed {
+            dq.was_pressed = false;
+            dq.held_start_time = None;
             pet.set_state(PetState::Sitting);
         } else {
             sprite_transform.translation = cursor_pos.extend(sprite_transform.translation.z);
