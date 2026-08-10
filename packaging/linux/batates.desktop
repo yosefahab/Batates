@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Batates
+Comment=A desktop pet
+Exec=batates
+Icon=batates
+Categories=Utility;
+Terminal=false
+# The overlay has no window of its own to show in a taskbar.
+NoDisplay=false
