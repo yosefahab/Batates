@@ -110,6 +110,12 @@ pub fn physical_to_logical(p: ScreenPhysical, geo: &ScreenGeometry) -> ScreenLog
 }
 
 /// Rebases a desktop-space logical point onto our surface.
+///
+/// Only backends that read a global cursor need this: macOS and Windows report
+/// the pointer in screen space, so it has to be rebased. Wayland delivers
+/// pointer events already relative to the surface, so on Linux nothing calls
+/// it.
+#[allow(dead_code)]
 pub fn screen_to_surface(p: ScreenLogical, surface: SurfaceOrigin) -> SurfaceLogical {
     SurfaceLogical(p.0 - surface.origin.0)
 }
