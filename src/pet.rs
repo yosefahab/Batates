@@ -154,8 +154,9 @@ fn setup_from_config(
     );
 
     // Click-to-summon needs a global cursor, which only some backends have.
-    // The config can turn it off, but cannot turn it on where it cannot work.
-    let tier = if config.click_to_summon {
+    // The config can turn it off, but cannot turn it on where it cannot work:
+    // Wayland only ever sees the pointer over our own surface.
+    let tier = if config.click_to_summon && !cfg!(target_os = "linux") {
         InteractionTier::ClickToSummon
     } else {
         InteractionTier::PetOnly
@@ -504,7 +505,7 @@ fn animate(
 /// Written with `set_if_neq` so backends can gate on change detection: Bevy
 /// warns and reverts if a platform rejects the value, and rewriting it every
 /// frame would loop on that.
-fn compute_input_region(
+pub(crate) fn compute_input_region(
     surface: Option<Res<SurfaceOrigin>>,
     skin: Res<Skin>,
     pets: Query<&Transform, With<Pet>>,

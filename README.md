@@ -8,7 +8,7 @@ A desktop pet, written in Rust with Bevy.
 |---|---|---|
 | macOS | Working | Full |
 | Windows | Builds and is lint-clean; not yet run on hardware | Full |
-| Linux (Wayland) | Session detection only; overlay not yet implemented | Pet-only, when finished |
+| Linux (Wayland) | Working on a single output, at scale 1 | Pet-only |
 | Linux (X11) | Not supported | |
 
 Interaction comes in two tiers, because the platforms genuinely differ:
@@ -104,8 +104,17 @@ The codebase splits into pure logic and plumbing:
 
 ## Known issues
 
-- The Wayland overlay is not implemented; see `src/platform/wayland/mod.rs` for
-  what remains.
+- The Wayland overlay only spans the first output it binds to; a second
+  monitor is neither covered nor rendered onto.
+- The Wayland overlay does not react to monitor hotplug or resize: its surface
+  is sized once at startup.
+- The Wayland overlay assumes `wl_output` scale 1. A fractionally- or
+  integer-scaled display will render the pet at the wrong size relative to
+  everything else on screen.
+- The Wayland overlay's offscreen render target is always full output
+  resolution, which can fail to allocate under GPU memory pressure (seen in
+  practice with ~600 MiB of VRAM free on a 6 GiB card). A pet overlay does not
+  need a full-resolution buffer; this is unoptimized, not fundamental.
 - The Windows build is compile-checked but has not been run on real hardware.
 - Releases are unsigned. macOS requires
   `xattr -dr com.apple.quarantine /Applications/Batates.app` on first launch.

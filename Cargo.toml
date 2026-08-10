@@ -42,3 +42,12 @@ opt-level = 3
 [target.'cfg(target_os = "linux")'.dependencies]
 wayland-client = "0.31.15"
 wayland-protocols-wlr = { version = "0.3.12", features = ["client"] }
+# tray-icon's Linux backend is built on gtk but does not initialize it or run
+# its event loop itself; both are the embedding app's responsibility.
+gtk = "0.18"
+# Same version Bevy 0.19 vendors, so the surface this backend builds by hand
+# is created with the exact same adapter/device the rest of the renderer uses.
+wgpu = "29.0.4"
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+pollster = "0.4"

@@ -8,6 +8,11 @@ impl Plugin for CameraPlugin {
     }
 }
 
-fn spawn_camera(mut commands: Commands) {
-    commands.spawn(Camera2d);
+/// Marks the app's one camera, so the Wayland backend can find it and
+/// redirect its output to the offscreen surface it owns.
+#[derive(Component)]
+pub struct PrimaryCamera;
+
+pub(crate) fn spawn_camera(mut commands: Commands) {
+    commands.spawn((Camera2d, PrimaryCamera));
 }

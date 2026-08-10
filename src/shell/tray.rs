@@ -31,6 +31,15 @@ pub struct Tray {
 /// experience, not a broken app, and on Linux it depends on the user running a
 /// StatusNotifierItem host at all.
 pub fn build_tray() -> Option<Tray> {
+    // The Linux backend is built on gtk, but neither initializes it nor runs
+    // its event loop; both are this app's responsibility. Without this, gtk
+    // panics as soon as the menu is built.
+    #[cfg(target_os = "linux")]
+    if let Err(error) = gtk::init() {
+        warn!("could not initialize gtk, so no tray icon will be shown: {error}");
+        return None;
+    }
+
     let add_pet = MenuItem::new("Add pet", true, None);
     let remove_pet = MenuItem::new("Remove pet", true, None);
     let quit = MenuItem::new("Quit Batates", true, None);
@@ -117,6 +126,13 @@ pub fn poll_tray(
     mut shutdown: MessageWriter<AppShutdown>,
 ) {
     let Some(tray) = tray else { return };
+
+    // Bevy's event loop is winit's, not gtk's, so gtk's own loop must be
+    // pumped manually or the tray menu never redraws or dispatches clicks.
+    #[cfg(target_os = "linux")]
+    while gtk::events_pending() {
+        gtk::main_iteration_do(false);
+    }
 
     while let Ok(event) = MenuEvent::receiver().try_recv() {
         let id = &event.id().0;
