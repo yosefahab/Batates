@@ -26,9 +26,9 @@ pub mod wayland;
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 pub use desktop::DesktopBackendPlugin as BackendPlugin;
 #[cfg(any(target_os = "macos", target_os = "windows"))]
-pub use desktop::overlay_window;
-#[cfg(any(target_os = "macos", target_os = "windows"))]
-pub use desktop::window::CURSOR_OPTIONS;
+pub use desktop::window_plugin;
 
 #[cfg(target_os = "linux")]
 pub use wayland::WaylandBackendPlugin as BackendPlugin;
+#[cfg(target_os = "linux")]
+pub use wayland::window_plugin;

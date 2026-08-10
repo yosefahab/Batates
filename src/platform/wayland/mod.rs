@@ -52,6 +52,18 @@ pub mod probe;
 
 use bevy::prelude::*;
 
+/// How this backend wants its window created: it does not.
+///
+/// The overlay is a layer-shell surface this backend owns, so winit must not
+/// create a window at all. Everything else in the app is unaffected, because
+/// the surface is published through `SurfaceOrigin` either way.
+pub fn window_plugin() -> bevy::window::WindowPlugin {
+    bevy::window::WindowPlugin {
+        primary_window: None,
+        ..default()
+    }
+}
+
 /// Installs the Wayland backend.
 ///
 /// Currently a placeholder: it satisfies the plugin shape so `main` is

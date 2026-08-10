@@ -15,7 +15,7 @@ use clap::Parser;
 use camera::CameraPlugin;
 use config::Config;
 use pet::PetPlugin;
-use platform::{BackendPlugin, CURSOR_OPTIONS, overlay_window};
+use platform::{BackendPlugin, window_plugin};
 use shell::ShellPlugin;
 
 /// Exit code for a config the user must fix.
@@ -97,12 +97,7 @@ fn load_config_or_exit() -> Config {
 fn setup_plugins() -> PluginGroupBuilder {
     DefaultPlugins
         .set(ImagePlugin::default_nearest())
-        .set(WindowPlugin {
-            primary_window: Some(overlay_window()),
-            // Split out of `Window` in Bevy 0.17.
-            primary_cursor_options: Some(CURSOR_OPTIONS),
-            ..default()
-        })
+        .set(window_plugin())
         .set(AssetPlugin {
             mode: AssetMode::Unprocessed,
             ..default()

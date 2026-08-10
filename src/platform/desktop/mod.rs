@@ -18,7 +18,19 @@ use crate::core::PetSystems;
 use crate::core::coords::{ScreenGeometry, SurfaceOrigin, physical_to_logical, screen_to_surface};
 use crate::core::input::{PointerAt, PointerSample};
 
-pub use window::overlay_window;
+/// How this backend wants its window created.
+///
+/// Owned by the backend rather than by `main` so the app's setup does not have
+/// to know that one platform needs a winit window and another creates its own
+/// surface.
+pub fn window_plugin() -> bevy::window::WindowPlugin {
+    bevy::window::WindowPlugin {
+        primary_window: Some(window::overlay_window()),
+        // Split out of `Window` in Bevy 0.17.
+        primary_cursor_options: Some(window::CURSOR_OPTIONS),
+        ..default()
+    }
+}
 
 /// Installs the desktop backend.
 pub struct DesktopBackendPlugin;
