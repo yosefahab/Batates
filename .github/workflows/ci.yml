@@ -32,8 +32,10 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      # Bevy needs the windowing and audio headers; tray-icon needs GTK and the
-      # AppIndicator library for its StatusNotifierItem backend.
+      # Bevy needs the windowing and audio headers. tray-icon needs GTK and the
+      # AppIndicator library for its StatusNotifierItem backend, and libxdo via
+      # muda, its menu library. A missing libxdo only surfaces at link time, so
+      # clippy passes and the first step that builds a binary fails instead.
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
@@ -45,7 +47,8 @@ jobs:
             libasound2-dev \
             pkg-config \
             libgtk-3-dev \
-            libayatana-appindicator3-dev
+            libayatana-appindicator3-dev \
+            libxdo-dev
 
       - name: Format
         run: cargo fmt --all --check
