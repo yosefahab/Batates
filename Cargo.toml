@@ -1,7 +1,8 @@
 [package]
 name = "batates"
 version = "0.1.2"
-edition = "2021"
+edition = "2024"
+rust-version = "1.95"
 
 [package.metadata.bundle]
 name = "batates"
@@ -9,21 +10,35 @@ identifier = "com.batates.app"
 icon = ["assets/icon.ico"]
 
 [dependencies]
-device_query = "3.0.1"
-bevy = { version = "0.15.0", default-features = false, features = [
-  "png",
-  "bevy_winit",
-  "bevy_sprite",
-] }
-resolution = "0.2.0"
+# The curated "2d" collection pulls the sprite render stack, winit, and the
+# platform defaults. Trimming it is deferred until the platform boundary lands,
+# since the Linux backend will need a different feature set than macOS/Windows.
+bevy = { version = "0.19", default-features = false, features = ["2d", "png"] }
+# Seeded and injected so behaviour is reproducible in tests.
+rand = "0.9"
+rand_chacha = "0.9"
+thiserror = "2"
+bitflags = "2"
+serde = { version = "1", features = ["derive"] }
+ron = "0.12"
+toml = "0.9"
+directories = "6"
+tray-icon = "0.24.2"
+ctrlc = { version = "3.5.2", features = ["termination"] }
+interprocess = "2.4.3"
+clap = { version = "4.6.6", features = ["derive"] }
 
 [profile.release]
 codegen-units = 1
 lto = "thin"
-strip = true
+# Keep panic locations: "abort" turned every panic into SIGABRT, which is why
+# quitting from anywhere but the window buttons looked like a crash.
+strip = "debuginfo"
 opt-level = "z"
-panic = "abort"
-
 
 [profile.dev.package."*"]
 opt-level = 3
+
+[target.'cfg(target_os = "linux")'.dependencies]
+wayland-client = "0.31.15"
+wayland-protocols-wlr = { version = "0.3.12", features = ["client"] }
