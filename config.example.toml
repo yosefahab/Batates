@@ -1,0 +1,45 @@
+# Batates configuration.
+#
+# Copy to your config directory to use it:
+#   macOS   ~/Library/Application Support/com.batates.batates/config.toml
+#   Linux   ~/.config/batates/config.toml
+#   Windows %APPDATA%\batates\batates\config\config.toml
+#
+# Or point at any file with $BATATES_CONFIG.
+#
+# Every value below is a default, so an absent file behaves the same as this
+# one. Unknown keys are an error rather than being silently ignored, so a typo
+# is reported instead of quietly doing nothing.
+
+[app]
+# Skin name. "koala" is built into the binary; any other name is a directory
+# under the skins folder. A name is never a path.
+skin = "koala"
+
+# How many pets to spawn, 1 to 64.
+pets = 1
+
+# Sprite scale multiplier.
+scale = 1.5
+
+# 0 draws randomness from the OS. Any other value makes a run reproducible,
+# which is useful for reporting a bug.
+seed = 0
+
+[behavior]
+# Clicking bare desktop sends the nearest pet walking there.
+# Unavailable on Wayland, which cannot report the cursor outside our own
+# surface; it is ignored there.
+click_to_summon = true
+
+# Two clicks closer together than this count as a double click.
+double_click_ms = 250
+
+# Holding longer than this turns a click into a drag.
+drag_threshold_ms = 125
+
+[debug]
+# Draws each pet's clickable box in green and the cursor the app believes in
+# as a red crosshair. Turn this on if clicking the pet does not work: a gap
+# between the crosshair and your real pointer is a coordinate bug.
+overlay = false

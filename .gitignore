@@ -1,6 +1,13 @@
 build/
 target/
 releases/
-scripts/
-assets/
-.ds_store
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Local agent/editor config
+CLAUDE.md
+.claude/
+.vscode/
+.idea/
