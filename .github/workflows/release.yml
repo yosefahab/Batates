@@ -36,6 +36,17 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+
+      # macos-15 runners ship with far more toolchain than a Rust build
+      # needs (Android SDK, extra simulator runtimes); building two full
+      # release architectures for a Bevy app filled the rest, leaving
+      # hdiutil no room to create the DMG.
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /Users/runner/Library/Android/sdk
+          sudo rm -rf /Users/runner/Library/Developer/CoreSimulator/Profiles/Runtimes
+          df -h /
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-apple-darwin, x86_64-apple-darwin
