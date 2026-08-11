@@ -156,7 +156,10 @@ fn setup_from_config(
     // Click-to-summon needs a global cursor, which only some backends have.
     // The config can turn it off, but cannot turn it on where it cannot work:
     // Wayland only ever sees the pointer over our own surface.
-    let tier = if config.click_to_summon && !cfg!(target_os = "linux") {
+    #[cfg(target_os = "linux")]
+    let tier = InteractionTier::PetOnly;
+    #[cfg(not(target_os = "linux"))]
+    let tier = if config.click_to_summon {
         InteractionTier::ClickToSummon
     } else {
         InteractionTier::PetOnly
